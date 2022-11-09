@@ -1,5 +1,5 @@
 ---
-title: "Time-series weather data for Vale de Cavalos, Portugal"
+title: "Weather for Vale de Cavalos, Portugal"
 author:
 - João Vasco Silva \& Jorge Silva
 date: "`r format(Sys.time(), '%d-%B-%Y')`"
