@@ -39,14 +39,14 @@ invisible(lapply(packages, library, character.only = TRUE))
 <hr style="border:1.5px solid black">
 # **Background information**
 
-This notebook summarizes time series data, starting in 2009 until present, from an automated weather station located in the village of Vale de Cavalos, Santarem, Portugal. The weather station contains sensors to measure... + brand of each sensor + querying of the data + add a nice photo
+This notebook summarizes time series weather data, starting in 2009 until present, from an automated weather station located in the village of Vale de Cavalos, Santarem, Portugal. The weather station contains sensors to measure solar radiation, minimum and maximum temperature, relative humidity, and precipitation (among others). Reference evapotranspiration was estimated for the location using the Penman-Monteith equations. The weather station maintained by Jorge Silva (please contact jorge.silva@bayer.com or jvasco323@posteo.net for further details).
 
-The weather data available through this weather station, and summarized in this notebook, is currently being used to (1) inform decision support tools for disease management in vineyards and (2) monitor the occurrence of extreme weather events in the region. The same data could be further used to estimate water-limited production yields for the main crops cultivated in the region with crop growth models, among other applications in the field of agronomy. This notebook is updated yearly as data become available.
+The weather data available through this weather station is currently being used to (1) inform decision support tools for disease management in vineyards, and (2) monitor the occurrence of extreme weather events in the region. The same data could be further used to estimate water-limited production yields for the main crops cultivated in the region with crop growth models, among other applications in the field of agronomy. This notebook is updated yearly as data become available.
 
 <hr style="border:1.5px solid black">
 # **Location of weather station**
 
-The weather station is located in the village of Vale de Cavalos with the following GPS coordinates: .... latitude, .... longitude, ... m above sea level. This location encompasses a vineyard in a lowland area adjacent to the village in a transitional zone between heath (charneca) and alluvial plains (campina), approximately 5 km south of Tejo river. The transitional zone can be best visualized by zooming-out from the location of the station displayed in the map below. The alluvial plains around river Tejo comprise important agricultural regions for the production of arable crops (e.g., maize and tomato) as well as for wine production. 
+The weather station is installed in a lowland area with a vineyard currently under production, adjacent to the village of Vale de Cavalos (GPS coordinates: 39.288 N, -8.522 W, 250 m above sea level) and approximately 5 km south of Tejo river. The vineyard is part of a transitional zone between human managed heath landscapes ('charneca') and alluvial plains with intensive arable farming ('campina'). The transitional zone can be best visualized by zooming-out from the location of the station displayed in the map below. The alluvial plains around river Tejo are an important agricultural region for the production of arable crops (e.g., maize and tomato) and  for wine production in Portugal. 
 
 ```{r, echo=FALSE, fig.align="center", fig.height=2.75, out.width="100%"}
 location <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/vale_de_cavalos.csv')
@@ -55,9 +55,7 @@ leaflet(location) %>%
   addCircleMarkers()
 ```
 
-The region is characterized by a Mediterranean climate (Koppen etc.) with dry and hot summer periods between June and September, and weat and cold winter periods between December and March.
-
-Vale de Cavalos has ... inhabitants etc.
+The region is characterized by a Hot-summer Mediterranean climate (CSa), according the Köppen climate classification (https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification). A Mediterranean climate, also called dry summer temperate climate Cs, is a temperate climate sub-type, characterized by dry, hot summers and mild, wet winters. The climate receives its name from the Mediterranean Basin, where this climate type is most common. Mediterranean climate zones are typically located along the western coasts of continents, between roughly 30 and 45 degrees north and south of the equator. The main cause of Mediterranean, or dry summer climate, is the subtropical ridge which extends toward that hemisphere's pole during the summer and migrates toward the equator during the winter due to the seasonal poleward-equatorward variations of temperatures. Please see https://en.wikipedia.org/wiki/Mediterranean_climate#Hot-summer_Mediterranean_climate for further information about the Hot-summer Mediterranean climate.
 
 <hr style="border:1.5px solid black">
 # **Daily weather conditions**
