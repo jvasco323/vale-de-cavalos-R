@@ -1,0 +1,436 @@
+---
+title: "Time-series weather data for Vale de Cavalos, Portugal"
+author:
+- João Vasco Silva \& Jorge Silva
+date: "`r format(Sys.time(), '%d-%B-%Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+    fig_caption: yes
+    css: style.css
+    header-includes:
+    - \usepackage{setspace}
+    - \sinlgespacing
+---
+
+<body style="background-color:rgb(249, 247, 245);">
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(message = FALSE)
+```
+
+```{r, echo=FALSE, warning=FALSE}
+# package names
+packages <- c("leaflet", "plotly", "highcharter", "visNetwork", "DT", "dygraphs", "xts", "htmltools", "tidyverse", "manipulateWidget", "downloadthis")
+
+# install packages
+installed_packages <- packages %in% rownames(installed.packages())
+if(any(installed_packages == FALSE)){
+  install.packages(packages[!installed_packages])}
+
+# load packages
+invisible(lapply(packages, library, character.only = TRUE))
+```
+
+<hr style="border:1.5px solid black">
+# **Background information**
+
+This notebook summarizes time series data, starting in 2009 until present, from an automated weather station located in the village of Vale de Cavalos, Santarem, Portugal. The weather station contains sensors to measure... + brand of each sensor + querying of the data + add a nice photo
+
+The weather data available through this weather station, and summarized in this notebook, is currently being used to (1) inform decision support tools for disease management in vineyards and (2) monitor the occurrence of extreme weather events in the region. The same data could be further used to estimate water-limited production yields for the main crops cultivated in the region with crop growth models, among other applications in the field of agronomy. This notebook is updated yearly as data become available.
+
+<hr style="border:1.5px solid black">
+# **Location of weather station**
+
+The weather station is located in the village of Vale de Cavalos with the following GPS coordinates: .... latitude, .... longitude, ... m above sea level. This location encompasses a vineyard in a lowland area adjacent to the village in a transitional zone between heath (charneca) and alluvial plains (campina), approximately 5 km south of Tejo river. The transitional zone can be best visualized by zooming-out from the location of the station displayed in the map below. The alluvial plains around river Tejo comprise important agricultural regions for the production of arable crops (e.g., maize and tomato) as well as for wine production. 
+
+```{r, echo=FALSE, fig.align="center", fig.height=2.75, out.width="100%"}
+location <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/vale_de_cavalos.csv')
+leaflet(location) %>% 
+  addProviderTiles(providers$Esri.WorldImagery) %>%
+  addCircleMarkers()
+```
+
+The region is characterized by a Mediterranean climate (Koppen etc.) with dry and hot summer periods between June and September, and weat and cold winter periods between December and March.
+
+Vale de Cavalos has ... inhabitants etc.
+
+<hr style="border:1.5px solid black">
+# **Daily weather conditions**
+
+```{r, echo=FALSE, fig.height=10, fig.asp=0.618, out.width="100%", fig.align="center"}
+
+# plot 1
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+data_aggr <- aggregate(data[c('IRRAD_MJm2day', 'UM')], by=list('year'=data$Year, 'month'=data$Month), FUN=mean, na.rm=T)
+ts_data_rad <- xts(data[,48], order.by=as.Date(data[,2], "%Y-%m-%d"))
+ts_data_hum <- xts(data[,10], order.by=as.Date(data[,2], "%Y-%m-%d"))
+ts_rad <- cbind(ts_data_rad, ts_data_hum)
+rad <- dygraph(ts_rad, group=ts_rad) %>%
+  dyAxis("y", label = "Solar radiation (MJ/m2/day)", valueRange = c(0, 55), independentTicks=TRUE, axisLabelWidth=35)%>%
+  dyAxis("y2", label = "Relative humidity (%)", valueRange = c(0, 110), independentTicks=TRUE, axisLabelWidth=35) %>%
+  dySeries("ts_data_rad", label='Radiation', color='goldenrod', axis='y') %>%
+  dySeries("ts_data_hum", label='Humidity', color='steelblue', axis='y2') %>%
+  dyOptions(fillGraph=T, drawPoints=T, pointSize=2) %>%
+  dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE)
+
+# plot 2
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+data_aggr <- aggregate(data[c('TMIN', 'TMAX')], by=list('year'=data$Year, 'month'=data$Month), FUN=mean, na.rm=T)
+ts_data_tmin <- xts(data[,3], order.by=as.Date(data[,2], "%Y-%m-%d"))
+ts_data_tmax <- xts(data[,4], order.by=as.Date(data[,2], "%Y-%m-%d"))
+ts_temp <- cbind(ts_data_tmin, ts_data_tmax)
+temp <- dygraph(ts_temp, group=ts_rad) %>%
+  dyAxis("y", label='Air temperature (C)', valueRange = c(-10, 55), axisLabelWidth=35) %>% 
+  dyAxis("y2", label='Air temperature (C)', valueRange = c(-10, 55), axisLabelWidth=35) %>% 
+  dySeries("ts_data_tmax", label="TMAX", axis='y') %>%
+  dySeries("ts_data_tmin", label="TMIN", axis='y2') %>%
+  dyOptions(fillGraph=T, drawPoints=T, pointSize=2) %>%
+  dyLimit(40, "", strokePattern="solid", color="red") %>% 
+  dyLimit(0, "", strokePattern="solid", color="red") %>% 
+  dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE)
+
+# plot 3
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+data_aggr <- aggregate(data[c('RAIN_mm', 'ET0_mm')], by=list('year'=data$Year, 'month'=data$Month), FUN=mean, na.rm=T)
+ts_data_rain <- xts(data[,16], order.by=as.Date(data[,2], "%Y-%m-%d"))
+ts_data_et0 <- xts(data[,27], order.by=as.Date(data[,2], "%Y-%m-%d"))
+ts_rain <- cbind(ts_data_rain, ts_data_et0)
+rain <- dygraph(ts_rain, group=ts_rad) %>%
+  dyAxis("y", label = "Precipitation (mm)", valueRange = c(0, 65), independentTicks = TRUE, axisLabelWidth=35)%>%
+  dyAxis("y2", label = "Reference ET (mm)", valueRange = c(0, 6.5), independentTicks = TRUE, axisLabelWidth=35) %>%
+  dySeries("ts_data_rain", label='RAIN', color='darkblue', axis='y') %>%
+  dySeries("ts_data_et0", label='ET0', color='dodgerblue', axis='y2') %>%
+  dyOptions(fillGraph=T, drawPoints=T, pointSize=2) %>%
+  dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
+  dyRangeSelector(height = 40, dateWindow = c("2021-01-01", "2021-12-31"))
+
+# both
+combineWidgets(rad, temp, rain, nrow=3, ncol=1, rowsize=c(1,1,1), height=720)
+```
+
+<hr style="border:1.5px solid black">
+# **Climate change over time**
+
+```{r, echo=FALSE, fig.height=10, fig.asp=0.3, out.width="100%", fig.align="center"}
+
+# radiation & rain -------------------------------------------------------------
+
+# load data
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+
+# january - december
+data_yr <- data
+data_yr <- aggregate(data_yr[c('RAIN_mm', 'IRRAD_MJm2day')], by=list('year'=data_yr$Year), FUN=sum, na.rm=T)
+data_yr$year <- paste0(data_yr$year, '-01-01')
+data_yr_rain_cum <- xts(data_yr[,2], order.by=as.Date(data_yr$year))  
+data_yr_srad_cum <- xts(data_yr[,3], order.by=as.Date(data_yr$year))  
+
+# january - march
+data_mar <- subset(data, Month == 1 | Month == 2 | Month == 3)
+data_mar <- aggregate(data_mar[c('RAIN_mm', 'IRRAD_MJm2day')], by=list('year'=data_mar$Year), FUN=sum, na.rm=T)
+data_mar$year <- paste0(data_mar$year, '-01-01')
+data_mar_rain_cum <- xts(data_mar[,2], order.by=as.Date(data_mar$year))  
+data_mar_srad_cum <- xts(data_mar[,3], order.by=as.Date(data_mar$year))  
+
+# january - june
+data_jun <- subset(data, Month == 1 | Month == 2 | Month == 3 | Month == 4 | Month == 5 | Month == 6)
+data_jun <- aggregate(data_jun[c('RAIN_mm', 'IRRAD_MJm2day')], by=list('year'=data_jun$Year), FUN=sum, na.rm=T)
+data_jun$year <- paste0(data_jun$year, '-01-01')
+data_jun_rain_cum <- xts(data_jun[,2], order.by=as.Date(data_jun$year))  
+data_jun_srad_cum <- xts(data_jun[,3], order.by=as.Date(data_jun$year))  
+
+# january - september
+data_sep <- subset(data, Month == 1 | Month == 2 | Month == 3 | Month == 4 | Month == 5 | Month == 6 | Month == 7 | Month == 8 | Month == 9)
+data_sep <- aggregate(data_sep[c('RAIN_mm', 'IRRAD_MJm2day')], by=list('year'=data_sep$Year), FUN=sum, na.rm=T)
+data_sep$year <- paste0(data_sep$year, '-01-01')
+data_sep_rain_cum <- xts(data_sep[,2], order.by=as.Date(data_sep$year))  
+data_sep_srad_cum <- xts(data_sep[,3], order.by=as.Date(data_sep$year))  
+
+# data for plot
+data_plot_srad <- cbind(data_mar_srad_cum/100, data_jun_srad_cum/100, data_sep_srad_cum/100, data_yr_srad_cum/100)
+p1 <- dygraph(data_plot_srad) %>%
+  dyAxis("y", label = "Solar radiation (x100 MJ/m2)", valueRange = c(0, 80), independentTicks = TRUE, axisLabelWidth=35) %>%
+  dySeries("data_yr_srad_cum.100", label='Year', color='orangered', axis='y') %>%
+  dySeries("data_mar_srad_cum.100", label='Jan-Mar', color='goldenrod', axis='y') %>%
+  dySeries("data_jun_srad_cum.100", label='Apr-Jun', color='goldenrod', axis='y') %>%
+  dySeries("data_sep_srad_cum.100", label='Jul-Sep', color='goldenrod', axis='y') %>%
+  dyOptions(fillGraph=T, drawPoints=T, pointSize=2, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
+  dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
+  # dyRangeSelector(height = 40, dateWindow = c("2009-01-01", "2021-01-01")) %>%
+  dyAxis("x", drawGrid = FALSE) %>%
+  dyAxis("x", axisLabelFormatter="function(d) { return d.getFullYear() }") # %>%
+
+# data for plot
+data_plot_rain <- cbind(data_mar_rain_cum/10, data_jun_rain_cum/10, data_sep_rain_cum/10, data_yr_rain_cum/10)
+p2 <- dygraph(data_plot_rain, group=data_plot_srad) %>%
+  dyAxis("y", label = "Precipitation (cm)", valueRange = c(0, 110), independentTicks = TRUE, axisLabelWidth=35) %>%
+  dySeries("data_yr_rain_cum.10", label='Year', color='darkblue', axis='y') %>%
+  dySeries("data_mar_rain_cum.10", label='Jan-Mar', color='dodgerblue', axis='y') %>%
+  dySeries("data_jun_rain_cum.10", label='Apr-Jun', color='dodgerblue', axis='y') %>%
+  dySeries("data_sep_rain_cum.10", label='Jul-Sep', color='dodgerblue', axis='y') %>%
+  dyOptions(fillGraph=T, drawPoints=T, pointSize=2, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
+  dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
+  # dyRangeSelector(height = 40, dateWindow = c("2009-01-01", "2021-01-01")) %>%
+  dyAxis("x", drawGrid = FALSE) %>%
+  dyAxis("x", axisLabelFormatter="function(d) { return d.getFullYear() }") # %>%
+
+# temperature ------------------------------------------------------------------
+
+# january - december
+data_yr <- data
+data_yr <- aggregate(data_yr[c('TMAX', 'TMIN')], by=list('year'=data_yr$Year), FUN=mean, na.rm=T)
+data_yr$year <- paste0(data_yr$year, '-01-01')
+data_yr_tmax_av <- xts(data_yr[,2], order.by=as.Date(data_yr$year))  
+data_yr_tmin_av <- xts(data_yr[,3], order.by=as.Date(data_yr$year))  
+
+# january - march
+data_mar <- subset(data, Month == 1 | Month == 2 | Month == 3)
+data_mar <- aggregate(data_mar[c('TMAX', 'TMIN')], by=list('year'=data_mar$Year), FUN=mean, na.rm=T)
+data_mar$year <- paste0(data_mar$year, '-01-01')
+data_mar_tmax_av <- xts(data_mar[,2], order.by=as.Date(data_mar$year))  
+data_mar_tmin_av <- xts(data_mar[,3], order.by=as.Date(data_mar$year))  
+
+# april - june
+data_jun <- subset(data, Month == 4 | Month == 5 | Month == 6)
+data_jun <- aggregate(data_jun[c('TMAX', 'TMIN')], by=list('year'=data_jun$Year), FUN=mean, na.rm=T)
+data_jun$year <- paste0(data_jun$year, '-01-01')
+data_jun_tmax_av <- xts(data_jun[,2], order.by=as.Date(data_jun$year))  
+data_jun_tmin_av <- xts(data_jun[,3], order.by=as.Date(data_jun$year))  
+
+# july - september
+data_sep <- subset(data, Month == 7 | Month == 8 | Month == 9)
+data_sep <- aggregate(data_sep[c('TMAX', 'TMIN')], by=list('year'=data_sep$Year), FUN=mean, na.rm=T)
+data_sep$year <- paste0(data_sep$year, '-01-01')
+data_sep_tmax_av <- xts(data_sep[,2], order.by=as.Date(data_sep$year))  
+data_sep_tmin_av <- xts(data_sep[,3], order.by=as.Date(data_sep$year))  
+
+# october - december
+data_dec <- subset(data, Month == 10 | Month == 11 | Month == 12)
+data_dec <- aggregate(data_dec[c('TMAX', 'TMIN')], by=list('year'=data_dec$Year), FUN=mean, na.rm=T)
+data_dec$year <- paste0(data_dec$year, '-01-01')
+data_dec_tmax_av <- xts(data_dec[,2], order.by=as.Date(data_dec$year))  
+data_dec_tmin_av <- xts(data_dec[,3], order.by=as.Date(data_dec$year))  
+
+# data for plot
+data_plot_tmax <- cbind(data_mar_tmax_av, data_jun_tmax_av, data_sep_tmax_av, data_dec_tmax_av, data_yr_tmax_av)
+p3 <- dygraph(data_plot_tmax) %>%
+  dyAxis("y", label = "Maximum temperature (C)", valueRange = c(10, 45), independentTicks = TRUE, axisLabelWidth=35) %>%
+  dySeries("data_yr_tmax_av", label='Year', color='black', axis='y') %>%
+  dySeries("data_mar_tmax_av", label='Jan-Mar', color='red', axis='y') %>%
+  dySeries("data_jun_tmax_av", label='Apr-Jun', color='salmon', axis='y') %>%
+  dySeries("data_sep_tmax_av", label='Jul-Sep', color='plum', axis='y') %>%
+  dySeries("data_dec_tmax_av", label='Oct-Dec', color='firebrick', axis='y') %>%
+  dyOptions(fillGraph=T, drawPoints=T, pointSize=2, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
+  dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
+  # dyRangeSelector(height = 40, dateWindow = c("2009-01-01", "2021-01-01")) %>%
+  dyAxis("x", drawGrid = FALSE) %>%
+  dyAxis("x", axisLabelFormatter="function(d) { return d.getFullYear() }") # %>%
+
+# data for plot
+data_plot_tmin <- cbind(data_mar_tmin_av, data_jun_tmin_av, data_sep_tmin_av, data_dec_tmin_av, data_yr_tmin_av)
+p4 <- dygraph(data_plot_tmin) %>%
+  dyAxis("y", label = "Minimum temperature (C)", valueRange = c(-2, 20), independentTicks = TRUE, axisLabelWidth=35) %>%
+  dySeries("data_yr_tmin_av", label='Year', color='black', axis='y') %>%
+  dySeries("data_mar_tmin_av", label='Jan-Mar', color='blue', axis='y') %>%
+  dySeries("data_jun_tmin_av", label='Apr-Jun', color='steelblue', axis='y') %>%
+  dySeries("data_sep_tmin_av", label='Jul-Sep', color='skyblue', axis='y') %>%
+  dySeries("data_dec_tmin_av", label='Oct-Dec', color='royalblue', axis='y') %>%
+  dyOptions(fillGraph=T, drawPoints=T, pointSize=2, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
+  dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
+  # dyRangeSelector(height = 40, dateWindow = c("2009-01-01", "2021-01-01")) %>%
+  dyAxis("x", drawGrid = FALSE) %>%
+  dyAxis("x", axisLabelFormatter="function(d) { return d.getFullYear() }") # %>%
+
+# number of days ---------------------------------------------------------------
+
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+heat_days <- subset(data, TMAX > 39)
+heat_days$unique <- 1
+heat_days <- aggregate(heat_days[c('unique')], by=list('year'=heat_days$Year), FUN=sum, na.rm=T)
+heat_days$year <- paste0(heat_days$year, '-01-01')
+heat_days <- xts(heat_days[,2], order.by=as.Date(heat_days$year))  
+cold_days <- subset(data, TMIN < 0)
+cold_days$unique <- 1
+cold_days <- aggregate(cold_days[c('unique')], by=list('year'=cold_days$Year), FUN=sum, na.rm=T)
+cold_days$year <- paste0(cold_days$year, '-01-01')
+cold_days <- xts(cold_days[,2], order.by=as.Date(cold_days$year))  
+
+# data for plot
+data_plot_days <- cbind(heat_days, cold_days)
+p5 <- dygraph(data_plot_days) %>%
+  dyAxis("y", label = "Number of heat & cold days", valueRange = c(0, 60), independentTicks = TRUE, axisLabelWidth=35) %>%
+  dySeries("heat_days", label='Heat days (TMAX > 39)', color='firebrick', axis='y') %>%
+  dySeries("cold_days", label='Cold days (TMIN < 0)', color='royalblue', axis='y') %>%
+  dyOptions(fillGraph=T, drawPoints=T, pointSize=2, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
+  dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
+  # dyRangeSelector(height = 40, dateWindow = c("2009-01-01", "2021-01-01")) %>%
+  dyAxis("x", drawGrid = FALSE) %>%
+  dyAxis("x", axisLabelFormatter="function(d) { return d.getFullYear() }") # %>%
+
+# number of days ---------------------------------------------------------------
+
+rain_days <- subset(data, RAIN_mm > 0)
+rain_days$unique <- 1
+rain_days <- aggregate(rain_days[c('unique')], by=list('year'=rain_days$Year), FUN=sum, na.rm=T)
+rain_days$year <- paste0(rain_days$year, '-01-01')
+rain_days <- xts(rain_days[,2], order.by=as.Date(rain_days$year))  
+
+# data for plot
+data_plot_days <- cbind(heat_days, cold_days, rain_days)[,c(3)]
+p6 <- dygraph(data_plot_days) %>%
+  dyAxis("y", label = "Number of rain days", valueRange = c(60, 160), independentTicks = TRUE, axisLabelWidth=35) %>%
+  dySeries("rain_days", label='Rain days (Rain > 0)', color='royalblue', axis='y') %>%
+  dyOptions(fillGraph=T, drawPoints=T, pointSize=2, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
+  dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
+  # dyRangeSelector(height = 40, dateWindow = c("2009-01-01", "2021-01-01")) %>%
+  dyAxis("x", drawGrid = FALSE) %>%
+  dyAxis("x", axisLabelFormatter="function(d) { return d.getFullYear() }")
+
+# all plots --------------------------------------------------------------------
+
+# both
+combineWidgets(p1, p2, p3, p4, p5, p6, nrow=3, ncol=2, rowsize=c(1), height=550+275)
+
+#plotInteractive <- function(Months, Variable){
+#  # subset
+#  month_subset <- subset(data, Month %in% Months)
+#  data_yr <- aggregate(month_subset[c(Variable)], by=list('year'=month_subset$Year), FUN=mean, na.rm=T)
+#  # plot
+#  dygraph(data_yr, main = Variable) %>%
+#    dyAxis("y", label = Variable) %>% #, valueRange = c(12, 18)) %>%
+#    dySeries(Variable, label=Variable, axis='y') %>%
+#    dyOptions(axisLineWidth = 1.5, fillGraph = TRUE, drawGrid = TRUE, drawPoints=T, pointSize=2) %>%
+#    dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) }
+# manipulateWidget(
+#  plotInteractive(Months, Variable),
+#  Variable = mwSelect(sort(unique(c('IRRAD_MJm2day', 'RAIN_mm'))), "IRRAD_MJm2day"),
+#  Months = mwCheckboxGroup(unique(data$Month), 0)
+# )
+
+```
+
+<hr style="border:1.5px solid black">
+# **Cumulative values**
+
+```{r, echo=FALSE, fig.height=10, fig.asp=0.3, out.width="100%", fig.align="center"}
+
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+
+# SRAD
+srad <- data[c('Y_year', 'DOY', 'IRRAD_MJm2day')]
+srad_final <- c()
+for(yr in unique(srad$Y_year)){
+  srad_yr <- subset(srad, Y_year == yr)
+  srad_yr$IRRAD_MJm2day <- cumsum(srad_yr$IRRAD_MJm2day)
+  srad_final <- rbind(srad_final, srad_yr)}
+srad_final$IRRAD_MJm2day <- srad_final$IRRAD_MJm2day/100
+srad <- reshape2::dcast(srad_final, DOY ~ Y_year, value.var='IRRAD_MJm2day')
+cum_srad <- dygraph(srad) %>%
+  dyGroup(c(names(srad)[-1]), stepPlot = TRUE, drawPoints = TRUE, color = viridis::inferno(14)) %>%
+  dyAxis("y", label = "Solar radiation (x100 MJ/m2/d)", valueRange = c(0, 80), independentTicks = TRUE, axisLabelWidth=35) %>%
+  dyOptions(fillGraph=F, drawPoints=T, pointSize=1, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
+  dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
+  dyAxis("x", drawGrid = FALSE) %>%
+  dyLegend(width=300)
+
+# GDD
+gdd <- data[c('Y_year', 'DOY', 'GDD')]
+gdd_final <- c()
+for(yr in unique(gdd$Y_year)){
+  gdd_yr <- subset(gdd, Y_year == yr)
+  gdd_yr$GDD <- cumsum(gdd_yr$GDD)
+  gdd_final <- rbind(gdd_final, gdd_yr)}
+gdd_final$GDD <- gdd_final$GDD/100
+gdd <- reshape2::dcast(gdd_final, DOY ~ Y_year, value.var='GDD')
+gdd_val <- dygraph(gdd) %>%
+  dyGroup(c(names(gdd)[-1]), stepPlot = TRUE, drawPoints = TRUE, color = viridis::inferno(14)) %>%
+  dyAxis("y", label = "Growing degrees day (x100)", valueRange = c(0, 35), independentTicks = TRUE, axisLabelWidth=35) %>%
+  dyOptions(fillGraph=F, drawPoints=T, pointSize=1, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
+  dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
+  dyAxis("x", drawGrid = FALSE) %>%
+  dyLegend(width=300)
+
+# RAIN
+rain <- data[c('Y_year', 'DOY', 'RAIN_mm')]
+rain_final <- c()
+for(yr in unique(rain$Y_year)){
+  rain_yr <- subset(rain, Y_year == yr)
+  rain_yr$RAIN_mm <- cumsum(rain_yr$RAIN_mm)
+  rain_final <- rbind(rain_final, rain_yr)}
+rain_final$RAIN_mm <- rain_final$RAIN_mm/10
+rain <- reshape2::dcast(rain_final, DOY ~ Y_year, value.var='RAIN_mm')
+cum_rain <- dygraph(rain) %>%
+  dyGroup(c(names(rain)[-1]), stepPlot = TRUE, drawPoints = TRUE, color = viridis::viridis(14)) %>%
+  dyAxis("y", label = "Precipitation (cm)", valueRange = c(0, 130), independentTicks = TRUE, axisLabelWidth=35) %>%
+  dyOptions(fillGraph=F, drawPoints=T, pointSize=1, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
+  dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
+  dyAxis("x", drawGrid = FALSE) %>%
+  dyLegend(width=300)
+
+# ET
+et <- data[c('Y_year', 'DOY', 'ET0_mm')]
+et_final <- c()
+for(yr in unique(et$Y_year)){
+  et_yr <- subset(et, Y_year == yr)
+  et_yr$ET0_mm <- cumsum(et_yr$ET0_mm)
+  et_final <- rbind(et_final, et_yr)}
+et_final$ET0_mm <- et_final$ET0_mm/10
+et <- reshape2::dcast(et_final, DOY ~ Y_year, value.var='ET0_mm')
+cum_et <- dygraph(et) %>%
+  dyGroup(c(names(et)[-1]), stepPlot = TRUE, drawPoints = TRUE, color = viridis::viridis(14)) %>%
+  dyAxis("y", label = "Reference ET (cm)", valueRange = c(0, 140), independentTicks = TRUE, axisLabelWidth=35) %>%
+  dyOptions(fillGraph=F, drawPoints=T, pointSize=1, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
+  dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
+  dyAxis("x", drawGrid = FALSE) %>%
+  dyLegend(width=300)
+
+# pal <- colorRampPalette(c('darkred', "darkorange", 'orange', 'yellowgreen', 'forestgreen', 'darkgreen'))
+# cum_et <- hchart(et_final, "line", hcaes(x=DOY, y=ET0_mm, group=Year, color=Year)) %>%
+#   hc_colors(c(pal(length(unique(et_final$Year))))) %>%
+#   hc_legend() %>%
+#   hc_yAxis(title = list(text="Reference ET (mm)", style=list(color='black', fontSize=16)),
+#            labels = list(style=list(color='black', fontSize=15))) %>%  
+#   hc_xAxis(title = list(text="Day-of-the-year (DOY)", style=list(color='black', fontSize=16)), 
+#            labels = list(style=list(color='black', fontSize=15)),  
+#            tickInterval = 1) %>%
+#   hc_chart(events = list(load = JS("function() {
+#       var chart = this; 
+#       chart.update({ chart: { plotBorderColor: 'black', plotBorderWidth: '1' } } ); }")))
+
+# both
+combineWidgets(cum_rain, gdd_val, cum_et, cum_srad, nrow=2, ncol=2, rowsize=c(1), height=600+100) 
+
+```
+
+<hr style="border:1.5px solid black">
+# **Table with complete data**
+
+```{r, echo=FALSE, warning=FALSE}
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+data <- data[c('Station', 'Date', 'Day', 'Month', 'Year', 'DOY', 'IRRAD_MJm2day', 'UM', 
+               'TMAX', 'TMIN', 'GDD', 'RAIN_mm', 'ET0_mm', 'LAT', 'LONG', 'ELEV')]
+colnames(data)[7] <- 'SRAD'
+round_df <- function(x, digits) {
+    numeric_columns <- sapply(x, mode) == 'numeric'
+    x[numeric_columns] <-  round(x[numeric_columns], digits)
+    x}
+data <- round_df(data, 2)
+data %>%
+  DT::datatable(options=list(scrollX=TRUE, scrollCollapse=TRUE), rownames = FALSE)
+```
+
+```{r, echo=FALSE, warning=FALSE}
+# data %>%
+#   download_this(
+#     output_name = "Weather_data_vale_de_cavalos",
+#     output_extension = ".csv",
+#     button_label = "DOWNLOAD DATA AS CSV",
+#     button_type = "default",
+#     has_icon = TRUE,
+#     icon = "fa fa-save")
+```
