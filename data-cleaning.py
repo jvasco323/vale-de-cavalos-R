@@ -7,7 +7,7 @@ import numpy as np
 from openpyxl import load_workbook
 import datetime as dt
 
-input_dir = r'D:\# Jvasco\Visualization\Vale de Cavalos'
+input_dir = r'D:\# Jvasco\Visualization\Vale de Cavalos\rmarkdown-weather'
 
 import os
 import sys
@@ -19,10 +19,37 @@ import xlrd
 # del sys.path[0:20]
 # path_to_the_model = os.path.abspath(os.path.join(os.getcwd(), '# WOFOST_v7.1/B) NEW_NPK_SEPT 2019'))
 # sys.path.append(path_to_the_model)
-import pcse
-from pcse.util import ea_from_tdew
-from pcse.db import NASAPowerWeatherDataProvider
-from pcse.db import AgERA5WeatherDataProvider
+# import pcse
+# from pcse.util import ea_from_tdew
+# from pcse.db import NASAPowerWeatherDataProvider
+# from pcse.db import AgERA5WeatherDataProvider
+
+
+def ea_from_tdew(tdew):
+    """
+    Calculates actual vapour pressure, ea [kPa] from the dewpoint temperature
+    using equation (14) in the FAO paper. As the dewpoint temperature is the
+    temperature to which air needs to be cooled to make it saturated, the
+    actual vapour pressure is the saturation vapour pressure at the dewpoint
+    temperature. This method is preferable to calculating vapour pressure from
+    minimum temperature.
+    Taken from fao_et0.py written by Mark Richards
+    Reference:
+    Allen, R.G., Pereira, L.S., Raes, D. and Smith, M. (1998) Crop
+        evapotranspiration. Guidelines for computing crop water requirements,
+        FAO irrigation and drainage paper 56)
+    Arguments:
+    tdew - dewpoint temperature [deg C]
+    """
+    # Raise exception:
+    if (tdew < -95.0 or tdew > 65.0):
+        # Are these reasonable bounds?
+        msg = 'tdew=%g is not in range -95 to +60 deg C' % tdew
+        raise ValueError(msg)
+    tmp = (17.27 * tdew) / (tdew + 237.3)
+    ea = 0.6108 * np.exp(tmp)
+    return ea
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Process data Vale de Cavalos -----------------------------------------------------------------------------------------
@@ -30,74 +57,79 @@ from pcse.db import AgERA5WeatherDataProvider
 
 # Load years -----------------------------------------------------------------------------------------------------------
 TBASE = 10      # para vinha....
-station_VC_2009 = pd.read_excel("{}/data/weather-data/weather-station/ETP_VC_2009.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2009 = pd.read_excel("{}/data/ETP_VC_2009.xlsx".format(input_dir), sheet_name='DataExp')
 station_VC_2009['RAIN_CUM'] = np.cumsum(station_VC_2009.RR)
 station_VC_2009['ETP_CUM'] = np.cumsum(station_VC_2009.ETP)
 station_VC_2009['GDD'] = np.where(((station_VC_2009.TX + station_VC_2009.TN)/2) - TBASE < 0, 0, (station_VC_2009.TX + station_VC_2009.TN)/2 - TBASE)
 station_VC_2009['GDD_CUM'] = np.cumsum(station_VC_2009.GDD)
-station_VC_2010 = pd.read_excel("{}/data/weather-data/weather-station/ETP_VC_2010.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2010 = pd.read_excel("{}/data/ETP_VC_2010.xlsx".format(input_dir), sheet_name='DataExp')
 station_VC_2010['RAIN_CUM'] = np.cumsum(station_VC_2010.RR)
 station_VC_2010['ETP_CUM'] = np.cumsum(station_VC_2010.ETP)
 station_VC_2010['GDD'] = np.where(((station_VC_2010.TX + station_VC_2010.TN)/2) - TBASE < 0, 0, (station_VC_2010.TX + station_VC_2010.TN)/2 - TBASE)
 station_VC_2010['GDD_CUM'] = np.cumsum(station_VC_2010.GDD)
-station_VC_2011 = pd.read_excel("{}/data/weather-data/weather-station/ETP_VC_2011.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2011 = pd.read_excel("{}/data/ETP_VC_2011.xlsx".format(input_dir), sheet_name='DataExp')
 station_VC_2011['RAIN_CUM'] = np.cumsum(station_VC_2011.RR)
 station_VC_2011['ETP_CUM'] = np.cumsum(station_VC_2011.ETP)
 station_VC_2011['GDD'] = np.where(((station_VC_2011.TX + station_VC_2011.TN)/2) - TBASE < 0, 0, (station_VC_2011.TX + station_VC_2011.TN)/2 - TBASE)
 station_VC_2011['GDD_CUM'] = np.cumsum(station_VC_2011.GDD)
-station_VC_2012 = pd.read_excel("{}/data/weather-data/weather-station/ETP_VC_2012.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2012 = pd.read_excel("{}/data/ETP_VC_2012.xlsx".format(input_dir), sheet_name='DataExp')
 station_VC_2012['RAIN_CUM'] = np.cumsum(station_VC_2012.RR)
 station_VC_2012['ETP_CUM'] = np.cumsum(station_VC_2012.ETP)
 station_VC_2012['GDD'] = np.where(((station_VC_2012.TX + station_VC_2012.TN)/2) - TBASE < 0, 0, (station_VC_2012.TX + station_VC_2012.TN)/2 - TBASE)
 station_VC_2012['GDD_CUM'] = np.cumsum(station_VC_2012.GDD)
-station_VC_2013 = pd.read_excel("{}/data/weather-data/weather-station/ETP_VC_2013_new.xlsx".format(input_dir), sheet_name='2013')
+station_VC_2013 = pd.read_excel("{}/data/ETP_VC_2013_new.xlsx".format(input_dir), sheet_name='2013')
 station_VC_2013['RAIN_CUM'] = np.cumsum(station_VC_2013.RR)
 station_VC_2013['ETP_CUM'] = np.cumsum(station_VC_2013.ETP)
 station_VC_2013['GDD'] = np.where(((station_VC_2013.TX + station_VC_2013.TN)/2) - TBASE < 0, 0, (station_VC_2013.TX + station_VC_2013.TN)/2 - TBASE)
 station_VC_2013['GDD_CUM'] = np.cumsum(station_VC_2013.GDD)
-station_VC_2014 = pd.read_excel("{}/data/weather-data/weather-station/ETP_VC_2014.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2014 = pd.read_excel("{}/data/ETP_VC_2014.xlsx".format(input_dir), sheet_name='DataExp')
 station_VC_2014['RAIN_CUM'] = np.cumsum(station_VC_2014.RR)
 station_VC_2014['ETP_CUM'] = np.cumsum(station_VC_2014.ETP)
 station_VC_2014['GDD'] = np.where(((station_VC_2014.TX + station_VC_2014.TN)/2) - TBASE < 0, 0, (station_VC_2014.TX + station_VC_2014.TN)/2 - TBASE)
 station_VC_2014['GDD_CUM'] = np.cumsum(station_VC_2014.GDD)
-station_VC_2015 = pd.read_excel("{}/data/weather-data/weather-station/ETP_VC_2015.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2015 = pd.read_excel("{}/data/ETP_VC_2015.xlsx".format(input_dir), sheet_name='DataExp')
 station_VC_2015['RAIN_CUM'] = np.cumsum(station_VC_2015.RR)
 station_VC_2015['ETP_CUM'] = np.cumsum(station_VC_2015.ETP)
 station_VC_2015['GDD'] = np.where(((station_VC_2015.TX + station_VC_2015.TN)/2) - TBASE < 0, 0, (station_VC_2015.TX + station_VC_2015.TN)/2 - TBASE)
 station_VC_2015['GDD_CUM'] = np.cumsum(station_VC_2015.GDD)
-station_VC_2016 = pd.read_excel("{}/data/weather-data/weather-station/ETP_VC_2016.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2016 = pd.read_excel("{}/data/ETP_VC_2016.xlsx".format(input_dir), sheet_name='DataExp')
 station_VC_2016['RAIN_CUM'] = np.cumsum(station_VC_2016.RR)
 station_VC_2016['ETP_CUM'] = np.cumsum(station_VC_2016.ETP)
 station_VC_2016['GDD'] = np.where(((station_VC_2016.TX + station_VC_2016.TN)/2) - TBASE < 0, 0, (station_VC_2016.TX + station_VC_2016.TN)/2 - TBASE)
 station_VC_2016['GDD_CUM'] = np.cumsum(station_VC_2016.GDD)
-station_VC_2017 = pd.read_excel("{}/data/weather-data/weather-station/ETP_VC_2017.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2017 = pd.read_excel("{}/data/ETP_VC_2017.xlsx".format(input_dir), sheet_name='DataExp')
 station_VC_2017['RAIN_CUM'] = np.cumsum(station_VC_2017.RR)
 station_VC_2017['ETP_CUM'] = np.cumsum(station_VC_2017.ETP)
 station_VC_2017['GDD'] = np.where(((station_VC_2017.TX + station_VC_2017.TN)/2) - TBASE < 0, 0, (station_VC_2017.TX + station_VC_2017.TN)/2 - TBASE)
 station_VC_2017['GDD_CUM'] = np.cumsum(station_VC_2017.GDD)
-station_VC_2018 = pd.read_excel("{}/data/weather-data/weather-station/ETP_VC_2018.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2018 = pd.read_excel("{}/data/ETP_VC_2018.xlsx".format(input_dir), sheet_name='DataExp')
 station_VC_2018['RAIN_CUM'] = np.cumsum(station_VC_2018.RR)
 station_VC_2018['ETP_CUM'] = np.cumsum(station_VC_2018.ETP)
 station_VC_2018['GDD'] = np.where(((station_VC_2018.TX + station_VC_2018.TN)/2) - TBASE < 0, 0, (station_VC_2018.TX + station_VC_2018.TN)/2 - TBASE)
 station_VC_2018['GDD_CUM'] = np.cumsum(station_VC_2018.GDD)
-station_VC_2019 = pd.read_excel("{}/data/weather-data/weather-station/ETP_VC_2019.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2019 = pd.read_excel("{}/data/ETP_VC_2019.xlsx".format(input_dir), sheet_name='DataExp')
 station_VC_2019['RAIN_CUM'] = np.cumsum(station_VC_2019.RR)
 station_VC_2019['ETP_CUM'] = np.cumsum(station_VC_2019.ETP)
 station_VC_2019['GDD'] = np.where(((station_VC_2019.TX + station_VC_2019.TN)/2) - TBASE < 0, 0, (station_VC_2019.TX + station_VC_2019.TN)/2 - TBASE)
 station_VC_2019['GDD_CUM'] = np.cumsum(station_VC_2019.GDD)
-station_VC_2020 = pd.read_excel("{}/data/weather-data/weather-station/ETP_VC_2020.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2020 = pd.read_excel("{}/data/ETP_VC_2020.xlsx".format(input_dir), sheet_name='DataExp')
 station_VC_2020['RAIN_CUM'] = np.cumsum(station_VC_2020.RR)
 station_VC_2020['ETP_CUM'] = np.cumsum(station_VC_2020.ETP)
 station_VC_2020['GDD'] = np.where(((station_VC_2020.TX + station_VC_2020.TN)/2) - TBASE < 0, 0, (station_VC_2020.TX + station_VC_2020.TN)/2 - TBASE)
 station_VC_2020['GDD_CUM'] = np.cumsum(station_VC_2020.GDD)
-station_VC_2021 = pd.read_excel("{}/data/weather-data/weather-station/ETP_VC_2021.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2021 = pd.read_excel("{}/data/ETP_VC_2021.xlsx".format(input_dir), sheet_name='DataExp')
 station_VC_2021['RAIN_CUM'] = np.cumsum(station_VC_2021.RR)
 station_VC_2021['ETP_CUM'] = np.cumsum(station_VC_2021.ETP)
 station_VC_2021['GDD'] = np.where(((station_VC_2021.TX + station_VC_2021.TN)/2) - TBASE < 0, 0, (station_VC_2021.TX + station_VC_2021.TN)/2 - TBASE)
 station_VC_2021['GDD_CUM'] = np.cumsum(station_VC_2021.GDD)
+station_VC_2022 = pd.read_excel("{}/data/ETP_VC_2022.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2022['RAIN_CUM'] = np.cumsum(station_VC_2022.RR)
+station_VC_2022['ETP_CUM'] = np.cumsum(station_VC_2022.ETP)
+station_VC_2022['GDD'] = np.where(((station_VC_2022.TX + station_VC_2022.TN)/2) - TBASE < 0, 0, (station_VC_2022.TX + station_VC_2022.TN)/2 - TBASE)
+station_VC_2022['GDD_CUM'] = np.cumsum(station_VC_2022.GDD)
 
 # Process data ---------------------------------------------------------------------------------------------------------
-station_VC = station_VC_2009.append(station_VC_2010).append(station_VC_2011).append(station_VC_2012).append(station_VC_2013).append(station_VC_2014).append(station_VC_2015).append(station_VC_2016).append(station_VC_2017).append(station_VC_2018).append(station_VC_2019).append(station_VC_2020).append(station_VC_2021)
+station_VC = station_VC_2009.append(station_VC_2010).append(station_VC_2011).append(station_VC_2012).append(station_VC_2013).append(station_VC_2014).append(station_VC_2015).append(station_VC_2016).append(station_VC_2017).append(station_VC_2018).append(station_VC_2019).append(station_VC_2020).append(station_VC_2021).append(station_VC_2022)
 station_VC['datetime'] = pd.to_datetime(station_VC['Date'], format='%d-%m-%Y', errors='coerce')
 station_VC['Year'] = station_VC['datetime'].dt.year
 station_VC['Country'] = 'Portugal'
@@ -122,7 +154,7 @@ station_VC['VAP_kPa'] = station_VC['TMIN'].apply(ea_from_tdew)
 station_VC['Source'] = 'JSilva'
 station_VC['Angstrom_A'] = -0.228
 station_VC['Angstrom_B'] = -0.538
-station_VC.to_csv('D:\# Jvasco\Visualization\Vale de Cavalos\data\weather-data\weather-station\Weather Data.csv')
+station_VC.to_csv(r'D:\# Jvasco\Visualization\Vale de Cavalos\rmarkdown-weather\data\vale_de_cavalos_weather.csv')
 
 # NASA Power -----------------------------------------------------------------------------------------------------------
 # NASA_POWER = NASAPowerWeatherDataProvider(latitude=39.28837262, longitude=-8.5221237, force_update=True)
@@ -135,7 +167,7 @@ station_VC.to_csv('D:\# Jvasco\Visualization\Vale de Cavalos\data\weather-data\w
 # era5_export.to_excel(os.path.join(input_dir, './Model Inputs/weather_agera5_vale de cavalos.xlsx'))
 
 # Write WOFOST Weather Template ----------------------------------------------------------------------------------------
-fn = r'D:\# Jvasco\Visualization\Vale de Cavalos\data\wofost-inputs\WOFOST_Weather_Vale de Cavalos.xlsx'
+fn = r'D:\# Jvasco\Visualization\Vale de Cavalos\rmarkdown-weather\data\vale_de_cavalos_wofost.xlsx'
 template = pd.read_excel(fn, header=None, sheet_name='ObservedWeather')
 for station in station_VC.Station.unique():
     station_loop = station_VC[station_VC.Station == station]
@@ -155,8 +187,8 @@ for station in station_VC.Station.unique():
     sheetname.cell(row=9, column=1).value = station_loop['LONG'].unique()[0]
     sheetname.cell(row=9, column=2).value = station_loop['LAT'].unique()[0]
     sheetname.cell(row=9, column=3).value = station_loop['ELEV'].unique()[0]
-    sheetname.cell(row=9, column=4).value = station_loop['Angstrom_A'].unique()[0]
-    sheetname.cell(row=9, column=5).value = station_loop['Angstrom_B'].unique()[0]
+    sheetname.cell(row=9, column=4).value = np.nan  # station_loop['Angstrom_A'].unique()[0]
+    sheetname.cell(row=9, column=5).value = np.nan  # station_loop['Angstrom_B'].unique()[0]
     writer.save()
 
 # ----------------------------------------------------------------------------------------------------------------------

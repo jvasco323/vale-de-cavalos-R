@@ -62,8 +62,11 @@ The region is characterized by a Hot-summer Mediterranean climate (CSa), accordi
 
 ```{r, echo=FALSE, fig.height=10, fig.asp=0.618, out.width="100%", fig.align="center"}
 
+date_start <- "2022-01-01"
+date_end <- "2022-12-31"
+
 # plot 1
-data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/vale_de_cavalos_weather.csv')
 data_aggr <- aggregate(data[c('IRRAD_MJm2day', 'UM')], by=list('year'=data$Year, 'month'=data$Month), FUN=mean, na.rm=T)
 ts_data_rad <- xts(data[,48], order.by=as.Date(data[,2], "%Y-%m-%d"))
 ts_data_hum <- xts(data[,10], order.by=as.Date(data[,2], "%Y-%m-%d"))
@@ -77,7 +80,7 @@ rad <- dygraph(ts_rad, group=ts_rad) %>%
   dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE)
 
 # plot 2
-data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/vale_de_cavalos_weather.csv')
 data_aggr <- aggregate(data[c('TMIN', 'TMAX')], by=list('year'=data$Year, 'month'=data$Month), FUN=mean, na.rm=T)
 ts_data_tmin <- xts(data[,3], order.by=as.Date(data[,2], "%Y-%m-%d"))
 ts_data_tmax <- xts(data[,4], order.by=as.Date(data[,2], "%Y-%m-%d"))
@@ -93,7 +96,7 @@ temp <- dygraph(ts_temp, group=ts_rad) %>%
   dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE)
 
 # plot 3
-data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/vale_de_cavalos_weather.csv')
 data_aggr <- aggregate(data[c('RAIN_mm', 'ET0_mm')], by=list('year'=data$Year, 'month'=data$Month), FUN=mean, na.rm=T)
 ts_data_rain <- xts(data[,16], order.by=as.Date(data[,2], "%Y-%m-%d"))
 ts_data_et0 <- xts(data[,27], order.by=as.Date(data[,2], "%Y-%m-%d"))
@@ -105,7 +108,7 @@ rain <- dygraph(ts_rain, group=ts_rad) %>%
   dySeries("ts_data_et0", label='ET0', color='dodgerblue', axis='y2') %>%
   dyOptions(fillGraph=T, drawPoints=T, pointSize=2) %>%
   dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
-  dyRangeSelector(height = 40, dateWindow = c("2021-01-01", "2021-12-31"))
+  dyRangeSelector(height = 40, dateWindow = c(date_start, date_end))
 
 # both
 combineWidgets(rad, temp, rain, nrow=3, ncol=1, rowsize=c(1,1,1), height=720)
@@ -119,7 +122,7 @@ combineWidgets(rad, temp, rain, nrow=3, ncol=1, rowsize=c(1,1,1), height=720)
 # radiation & rain -------------------------------------------------------------
 
 # load data
-data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/vale_de_cavalos_weather.csv')
 
 # january - december
 data_yr <- data
@@ -159,7 +162,6 @@ p1 <- dygraph(data_plot_srad) %>%
   dySeries("data_sep_srad_cum.100", label='Jul-Sep', color='goldenrod', axis='y') %>%
   dyOptions(fillGraph=T, drawPoints=T, pointSize=2, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
   dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
-  # dyRangeSelector(height = 40, dateWindow = c("2009-01-01", "2021-01-01")) %>%
   dyAxis("x", drawGrid = FALSE) %>%
   dyAxis("x", axisLabelFormatter="function(d) { return d.getFullYear() }") # %>%
 
@@ -173,7 +175,6 @@ p2 <- dygraph(data_plot_rain, group=data_plot_srad) %>%
   dySeries("data_sep_rain_cum.10", label='Jul-Sep', color='dodgerblue', axis='y') %>%
   dyOptions(fillGraph=T, drawPoints=T, pointSize=2, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
   dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
-  # dyRangeSelector(height = 40, dateWindow = c("2009-01-01", "2021-01-01")) %>%
   dyAxis("x", drawGrid = FALSE) %>%
   dyAxis("x", axisLabelFormatter="function(d) { return d.getFullYear() }") # %>%
 
@@ -225,7 +226,6 @@ p3 <- dygraph(data_plot_tmax) %>%
   dySeries("data_dec_tmax_av", label='Oct-Dec', color='firebrick', axis='y') %>%
   dyOptions(fillGraph=T, drawPoints=T, pointSize=2, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
   dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
-  # dyRangeSelector(height = 40, dateWindow = c("2009-01-01", "2021-01-01")) %>%
   dyAxis("x", drawGrid = FALSE) %>%
   dyAxis("x", axisLabelFormatter="function(d) { return d.getFullYear() }") # %>%
 
@@ -240,13 +240,12 @@ p4 <- dygraph(data_plot_tmin) %>%
   dySeries("data_dec_tmin_av", label='Oct-Dec', color='royalblue', axis='y') %>%
   dyOptions(fillGraph=T, drawPoints=T, pointSize=2, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
   dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
-  # dyRangeSelector(height = 40, dateWindow = c("2009-01-01", "2021-01-01")) %>%
   dyAxis("x", drawGrid = FALSE) %>%
   dyAxis("x", axisLabelFormatter="function(d) { return d.getFullYear() }") # %>%
 
 # number of days ---------------------------------------------------------------
 
-data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/vale_de_cavalos_weather.csv')
 heat_days <- subset(data, TMAX > 39)
 heat_days$unique <- 1
 heat_days <- aggregate(heat_days[c('unique')], by=list('year'=heat_days$Year), FUN=sum, na.rm=T)
@@ -266,7 +265,6 @@ p5 <- dygraph(data_plot_days) %>%
   dySeries("cold_days", label='Cold days (TMIN < 0)', color='royalblue', axis='y') %>%
   dyOptions(fillGraph=T, drawPoints=T, pointSize=2, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
   dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
-  # dyRangeSelector(height = 40, dateWindow = c("2009-01-01", "2021-01-01")) %>%
   dyAxis("x", drawGrid = FALSE) %>%
   dyAxis("x", axisLabelFormatter="function(d) { return d.getFullYear() }") # %>%
 
@@ -285,7 +283,6 @@ p6 <- dygraph(data_plot_days) %>%
   dySeries("rain_days", label='Rain days (Rain > 0)', color='royalblue', axis='y') %>%
   dyOptions(fillGraph=T, drawPoints=T, pointSize=2, drawYAxis=T, drawXAxis=T, axisLineColor='black') %>%
   dyHighlight(highlightCircleSize=4, highlightSeriesBackgroundAlpha = 0.5, highlightSeriesOpts = list(), hideOnMouseOut = TRUE) %>%
-  # dyRangeSelector(height = 40, dateWindow = c("2009-01-01", "2021-01-01")) %>%
   dyAxis("x", drawGrid = FALSE) %>%
   dyAxis("x", axisLabelFormatter="function(d) { return d.getFullYear() }")
 
@@ -317,7 +314,7 @@ combineWidgets(p1, p2, p3, p4, p5, p6, nrow=3, ncol=2, rowsize=c(1), height=550+
 
 ```{r, echo=FALSE, fig.height=10, fig.asp=0.3, out.width="100%", fig.align="center"}
 
-data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/vale_de_cavalos_weather.csv')
 
 # SRAD
 srad <- data[c('Y_year', 'DOY', 'IRRAD_MJm2day')]
@@ -409,7 +406,7 @@ combineWidgets(cum_rain, gdd_val, cum_et, cum_srad, nrow=2, ncol=2, rowsize=c(1)
 # **Table with complete data**
 
 ```{r, echo=FALSE, warning=FALSE}
-data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/Weather Data.csv')
+data <- read.csv('D:/# Jvasco/Visualization/Vale de Cavalos/rmarkdown-weather/data/vale_de_cavalos_weather.csv')
 data <- data[c('Station', 'Date', 'Day', 'Month', 'Year', 'DOY', 'IRRAD_MJm2day', 'UM', 
                'TMAX', 'TMIN', 'GDD', 'RAIN_mm', 'ET0_mm', 'LAT', 'LONG', 'ELEV')]
 colnames(data)[7] <- 'SRAD'
