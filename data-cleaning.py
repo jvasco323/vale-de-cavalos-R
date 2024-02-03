@@ -127,9 +127,14 @@ station_VC_2022['RAIN_CUM'] = np.cumsum(station_VC_2022.RR)
 station_VC_2022['ETP_CUM'] = np.cumsum(station_VC_2022.ETP)
 station_VC_2022['GDD'] = np.where(((station_VC_2022.TX + station_VC_2022.TN)/2) - TBASE < 0, 0, (station_VC_2022.TX + station_VC_2022.TN)/2 - TBASE)
 station_VC_2022['GDD_CUM'] = np.cumsum(station_VC_2022.GDD)
+station_VC_2023 = pd.read_excel("{}/data/ETP_VC_2023.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2023['RAIN_CUM'] = np.cumsum(station_VC_2023.RR)
+station_VC_2023['ETP_CUM'] = np.cumsum(station_VC_2023.ETP)
+station_VC_2023['GDD'] = np.where(((station_VC_2023.TX + station_VC_2023.TN)/2) - TBASE < 0, 0, (station_VC_2023.TX + station_VC_2023.TN)/2 - TBASE)
+station_VC_2023['GDD_CUM'] = np.cumsum(station_VC_2023.GDD)
 
 # Process data ---------------------------------------------------------------------------------------------------------
-station_VC = station_VC_2009.append(station_VC_2010).append(station_VC_2011).append(station_VC_2012).append(station_VC_2013).append(station_VC_2014).append(station_VC_2015).append(station_VC_2016).append(station_VC_2017).append(station_VC_2018).append(station_VC_2019).append(station_VC_2020).append(station_VC_2021).append(station_VC_2022)
+station_VC = station_VC_2009.append(station_VC_2010).append(station_VC_2011).append(station_VC_2012).append(station_VC_2013).append(station_VC_2014).append(station_VC_2015).append(station_VC_2016).append(station_VC_2017).append(station_VC_2018).append(station_VC_2019).append(station_VC_2020).append(station_VC_2021).append(station_VC_2022).append(station_VC_2023)
 station_VC['datetime'] = pd.to_datetime(station_VC['Date'], format='%d-%m-%Y', errors='coerce')
 station_VC['Year'] = station_VC['datetime'].dt.year
 station_VC['Country'] = 'Portugal'
@@ -154,7 +159,7 @@ station_VC['VAP_kPa'] = station_VC['TMIN'].apply(ea_from_tdew)
 station_VC['Source'] = 'JSilva'
 station_VC['Angstrom_A'] = -0.228
 station_VC['Angstrom_B'] = -0.538
-station_VC.to_csv(r'D:\# Jvasco\Visualization\Vale de Cavalos\rmarkdown-weather\data\vale_de_cavalos_weather.csv')
+station_VC.to_csv(r'D:\# Jvasco\Visualization\Vale de Cavalos\rmarkdown-weather\data\vale_de_cavalos_weather.csv', index=False)
 
 # NASA Power -----------------------------------------------------------------------------------------------------------
 # NASA_POWER = NASAPowerWeatherDataProvider(latitude=39.28837262, longitude=-8.5221237, force_update=True)
