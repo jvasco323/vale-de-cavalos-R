@@ -132,9 +132,16 @@ station_VC_2023['RAIN_CUM'] = np.cumsum(station_VC_2023.RR)
 station_VC_2023['ETP_CUM'] = np.cumsum(station_VC_2023.ETP)
 station_VC_2023['GDD'] = np.where(((station_VC_2023.TX + station_VC_2023.TN)/2) - TBASE < 0, 0, (station_VC_2023.TX + station_VC_2023.TN)/2 - TBASE)
 station_VC_2023['GDD_CUM'] = np.cumsum(station_VC_2023.GDD)
+station_VC_2024 = pd.read_excel("{}/data/ETP_VC_2024.xlsx".format(input_dir), sheet_name='DataExp')
+station_VC_2024['RAIN_CUM'] = np.cumsum(station_VC_2024.RR)
+station_VC_2024['ETP_CUM'] = np.cumsum(station_VC_2024.ETP)
+station_VC_2024['GDD'] = np.where(((station_VC_2024.TX + station_VC_2024.TN)/2) - TBASE < 0, 0, (station_VC_2024.TX + station_VC_2024.TN)/2 - TBASE)
+station_VC_2024['GDD_CUM'] = np.cumsum(station_VC_2024.GDD)
 
 # Process data ---------------------------------------------------------------------------------------------------------
-station_VC = station_VC_2009.append(station_VC_2010).append(station_VC_2011).append(station_VC_2012).append(station_VC_2013).append(station_VC_2014).append(station_VC_2015).append(station_VC_2016).append(station_VC_2017).append(station_VC_2018).append(station_VC_2019).append(station_VC_2020).append(station_VC_2021).append(station_VC_2022).append(station_VC_2023)
+lst = [station_VC_2009, station_VC_2010, station_VC_2011, station_VC_2012, station_VC_2013, station_VC_2014, station_VC_2015, station_VC_2016,
+       station_VC_2017, station_VC_2018, station_VC_2019, station_VC_2020, station_VC_2021, station_VC_2022, station_VC_2023, station_VC_2024]
+station_VC = pd.concat(lst, ignore_index=True)
 station_VC['datetime'] = pd.to_datetime(station_VC['Date'], format='%d-%m-%Y', errors='coerce')
 station_VC['Year'] = station_VC['datetime'].dt.year
 station_VC['Country'] = 'Portugal'
@@ -172,29 +179,29 @@ station_VC.to_csv(r'D:\# Jvasco\Visualization\Vale de Cavalos\rmarkdown-weather\
 # era5_export.to_excel(os.path.join(input_dir, './Model Inputs/weather_agera5_vale de cavalos.xlsx'))
 
 # Write WOFOST Weather Template ----------------------------------------------------------------------------------------
-fn = r'D:\# Jvasco\Visualization\Vale de Cavalos\rmarkdown-weather\data\vale_de_cavalos_wofost.xlsx'
-template = pd.read_excel(fn, header=None, sheet_name='ObservedWeather')
-for station in station_VC.Station.unique():
-    station_loop = station_VC[station_VC.Station == station]
-    station_final = station_loop[['datetime', 'IRRAD_kJm2day', 'TMIN', 'TMAX', 'VAP_kPa', 'WIND_ms', 'RAIN_mm', 'SNOWDEPTH_cm']]
-    sheet_name = station_loop['CountryStation'].unique()[0]
-    writer = pd.ExcelWriter(fn, engine='openpyxl')
-    book = load_workbook(fn)
-    writer.book = book
-    template.to_excel(writer, sheet_name=sheet_name, header=None, index=False)
-    station_final.to_excel(writer, sheet_name=sheet_name, header=False, index=False, startcol=0, startrow=12)
-    sheetname = book[sheet_name]
-    sheetname.cell(row=2, column=2).value = station_loop['Country'].unique()[0]
-    sheetname.cell(row=3, column=2).value = station_loop['Station'].unique()[0]
-    sheetname.cell(row=4, column=2).value = 'Processed with WeatherData_Clean.py'
-    sheetname.cell(row=5, column=2).value = station_loop['Source'].unique()[0]
-    sheetname.cell(row=6, column=2).value = 'Joao Vasco Silva, WUR'
-    sheetname.cell(row=9, column=1).value = station_loop['LONG'].unique()[0]
-    sheetname.cell(row=9, column=2).value = station_loop['LAT'].unique()[0]
-    sheetname.cell(row=9, column=3).value = station_loop['ELEV'].unique()[0]
-    sheetname.cell(row=9, column=4).value = np.nan  # station_loop['Angstrom_A'].unique()[0]
-    sheetname.cell(row=9, column=5).value = np.nan  # station_loop['Angstrom_B'].unique()[0]
-    writer.save()
+# fn = r'D:\# Jvasco\Visualization\Vale de Cavalos\rmarkdown-weather\data\vale_de_cavalos_wofost.xlsx'
+# template = pd.read_excel(fn, header=None, sheet_name='ObservedWeather', engine='openpyxl')
+# for station in station_VC.Station.unique():
+#     station_loop = station_VC[station_VC.Station == station]
+#     station_final = station_loop[['datetime', 'IRRAD_kJm2day', 'TMIN', 'TMAX', 'VAP_kPa', 'WIND_ms', 'RAIN_mm', 'SNOWDEPTH_cm']]
+#     sheet_name = station_loop['CountryStation'].unique()[0]
+#     writer = pd.ExcelWriter(fn, engine='openpyxl')
+#     book = load_workbook(fn)
+#     writer.book = book
+#     template.to_excel(writer, sheet_name=sheet_name, header=None, index=False)
+#     station_final.to_excel(writer, sheet_name=sheet_name, header=False, index=False, startcol=0, startrow=12)
+#     sheetname = book[sheet_name]
+#     sheetname.cell(row=2, column=2).value = station_loop['Country'].unique()[0]
+#     sheetname.cell(row=3, column=2).value = station_loop['Station'].unique()[0]
+#     sheetname.cell(row=4, column=2).value = 'Processed with WeatherData_Clean.py'
+#     sheetname.cell(row=5, column=2).value = station_loop['Source'].unique()[0]
+#     sheetname.cell(row=6, column=2).value = 'Joao Vasco Silva, WUR'
+#     sheetname.cell(row=9, column=1).value = station_loop['LONG'].unique()[0]
+#     sheetname.cell(row=9, column=2).value = station_loop['LAT'].unique()[0]
+#     sheetname.cell(row=9, column=3).value = station_loop['ELEV'].unique()[0]
+#     sheetname.cell(row=9, column=4).value = np.nan  # station_loop['Angstrom_A'].unique()[0]
+#     sheetname.cell(row=9, column=5).value = np.nan  # station_loop['Angstrom_B'].unique()[0]
+#     writer.save()
 
 # ----------------------------------------------------------------------------------------------------------------------
 # THE END --------------------------------------------------------------------------------------------------------------
